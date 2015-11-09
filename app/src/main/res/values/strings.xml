@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">GoFlick</string>
+    <string name="title_activity_landing">Go Flick</string>
+
+    <string name="search">Search for Images</string>
+    <string name="clearhistory">Clear History</string>
+    <string name="fullhistory">Full History</string>
+    <string name="title_activity_history">Search History</string>
 </resources>
