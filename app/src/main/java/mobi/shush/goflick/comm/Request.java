@@ -28,8 +28,8 @@ import mobi.shush.goflick.comm.handler.Parser;
  * Created by Shush on 11/11/2015.
  */
 public class Request<T extends Parser> extends AsyncTask<Void, Void, T> {
-	public static <T> Request build(String url, boolean post) {
-		return new Request(url, post);
+	public static <T extends Parser> Request build(String url, boolean post) {
+		return new Request<T>(url, post);
 	}
 
 	private HashMap<String, String> mParams;

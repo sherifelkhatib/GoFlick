@@ -12,15 +12,19 @@ import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CursorAdapter;
 import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
 import mobi.shush.goflick.adapter.PhotosAdapter;
 import mobi.shush.goflick.base.GoFlickActivity;
+import mobi.shush.goflick.bean.Photo;
 import mobi.shush.goflick.comm.Flickr;
 import mobi.shush.goflick.comm.Request;
 import mobi.shush.goflick.comm.RequestListener;
@@ -28,18 +32,22 @@ import mobi.shush.goflick.comm.handler.PhotosHandler;
 import mobi.shush.goflick.utils.User;
 
 
-public class LandingActivity extends GoFlickActivity {
+public class LandingActivity extends GoFlickActivity implements PhotosAdapter.Listener {
     private static final int REQUEST_HISTORY = 34;
     SearchView mSearchView;
     RecyclerView mRecyclerView;
     PhotosAdapter mAdapter;
     MenuItem mSearchItem;
     SimpleCursorAdapter mSuggestionsAdapter;
+    String mQuery;
+    View mClear;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_landing);
+        mClear = findViewById(R.id.clear);
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler);
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -50,10 +58,28 @@ public class LandingActivity extends GoFlickActivity {
                 new String[] {"title"},
                 new int[] {android.R.id.text1},
                 CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-        search("sherif");
+        if(savedInstanceState != null) {
+            mAdapter = PhotosAdapter.load(savedInstanceState, this, LandingActivity.this);
+            mQuery = savedInstanceState.getString("mQuery", null);
+            if(mAdapter != null) {
+                mRecyclerView.setAdapter(mAdapter);
+                getSupportActionBar().setTitle(mQuery);
+            }
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if(mAdapter!=null) {
+            mAdapter.save(outState);
+            outState.putString("mQuery", mQuery);
+        }
+        super.onSaveInstanceState(outState);
     }
 
     private void search(String searchTerm) {
+        mQuery = searchTerm;
+        getSupportActionBar().setTitle(mQuery);
         Flickr.search(searchTerm).setListener(new RequestListener<PhotosHandler>(this) {
             @Override
             public void onStart(Request request) {
@@ -66,7 +92,7 @@ public class LandingActivity extends GoFlickActivity {
             @Override
             public void onForeground(PhotosHandler result) {
                 super.onForeground(result);
-                mAdapter = new PhotosAdapter(LandingActivity.this, result.photos);
+                mAdapter = new PhotosAdapter(LandingActivity.this, result.photos, result.page, result.pages, LandingActivity.this);
                 mRecyclerView.setAdapter(mAdapter);
             }
         }).run();
@@ -102,8 +128,11 @@ public class LandingActivity extends GoFlickActivity {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 search(query);
-                mSearchView.setIconified(true);
-                return true;
+                mClear.requestFocus();
+                InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                MenuItemCompat.collapseActionView(mSearchItem);
+                return false;
             }
 
             @Override
@@ -133,7 +162,7 @@ public class LandingActivity extends GoFlickActivity {
 
             @Override
             public boolean onSuggestionClick(int position) {
-                Object item = ((Cursor)mSearchView.getSuggestionsAdapter().getItem(position)).getString(1);
+                Object item = ((Cursor) mSearchView.getSuggestionsAdapter().getItem(position)).getString(1);
                 search(item.toString());
                 return true;
             }
@@ -143,8 +172,7 @@ public class LandingActivity extends GoFlickActivity {
 
     @Override
     public void onBackPressed() {
-        if(mSearchView != null && !mSearchView.isIconified()) {
-            mSearchView.setIconified(true);
+        if(mSearchItem != null && mSearchItem.isActionViewExpanded()) {
             mSearchItem.collapseActionView();
         }
         else {
@@ -160,12 +188,19 @@ public class LandingActivity extends GoFlickActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_search) {
-            mSearchView.setIconifiedByDefault(true);
-            mSearchView.setFocusable(true);
-            mSearchView.setIconified(false);
-            mSearchView.requestFocusFromTouch();
-            return false;
+        switch (id) {
+            case R.id.action_search:
+                mSearchView.setIconifiedByDefault(true);
+                mSearchView.setFocusable(true);
+                mSearchView.setIconified(false);
+                mSearchView.requestFocusFromTouch();
+                return false;
+            case R.id.action_clear_history:
+                User.get().clearHistory();
+                return true;
+            case R.id.action_full_history:
+                startActivityForResult(new Intent(this, HistoryActivity.class), REQUEST_HISTORY);
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -189,12 +224,50 @@ public class LandingActivity extends GoFlickActivity {
             case REQUEST_HISTORY:
                 if (data != null && data.hasExtra(HistoryActivity.EXTRA_QUERY)) {
                     String query = data.getStringExtra(HistoryActivity.EXTRA_QUERY);
-                    search(query);
+//                    search(query);
 //                    mSearchBox.hideCircularly(this);
                     search(query);
                 }
                 break;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void showLoader() {
+        setProgressBarIndeterminateVisibility(true);
+    }
+    @Override
+    public void hideLoader() {
+        setProgressBarIndeterminateVisibility(false);
+    }
+
+    @Override
+    public void onLoadMore(PhotosAdapter adapter, int page) {
+        Flickr.search(mQuery, page).setListener(new RequestListener<PhotosHandler>(this) {
+            @Override
+            public void onStart(Request request) {
+//                super.onStart(request);
+            }
+
+            @Override
+            public void onForeground(PhotosHandler result) {
+                super.onForeground(result);
+                mAdapter.loadMore(result.photos, result.page, result.pages);
+            }
+
+            @Override
+            public void onError(Request request, Exception ex) {
+//                super.onError(request, ex);
+                mAdapter.loadMoreFailed();
+            }
+        }).run();
+    }
+    @Override
+    public void onPhotoClick(View view) {
+        int position = mRecyclerView.getChildAdapterPosition(view);
+        Photo photo = mAdapter.getPhoto(position);
+        Intent intent = DetailsActivity.getIntent(this, photo);
+        startActivity(intent);
     }
 }

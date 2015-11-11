@@ -8,6 +8,7 @@
 
     <ImageView
         android:layout_width="@dimen/image_width"
+        android:minHeight="@dimen/image_width"
         android:layout_height="wrap_content"
         android:id="@+id/image" />
 

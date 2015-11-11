@@ -9,4 +9,5 @@
 
     <string name="error_general_title">OOPS</string>
     <string name="error_general_message">An error has occurred.</string>
+    <string name="loadingmore">Getting more photos</string>
 </resources>
