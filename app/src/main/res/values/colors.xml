@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="white">#fff</color>
+    <color name="white_50">#afff</color>
+    <color name="red">#f00</color>
+    <color name="black">#000</color>
+    <color name="transparent">#0fff</color>
+    <color name="theme_header">#F3F3F3</color>
+    <color name="theme_dialog_light">#D83C8ECC</color>
+    <color name="theme_dialog_dark">#D80960a1</color>
+    <color name="theme_dialog_background">#B7FFFFFF</color>
+    <color name="theme_dialog_textcolor">@color/white</color>
+    <color name="theme_input_textcolor">@color/black</color>
+    <color name="theme_input_textcolor_hint">#C3C3C3</color>
+
+</resources>

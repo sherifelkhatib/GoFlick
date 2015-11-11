@@ -2,6 +2,7 @@ package mobi.shush.goflick;
 
 import android.app.Application;
 
+import mobi.shush.goflick.cache.Cacher;
 import mobi.shush.goflick.utils.User;
 
 /**
@@ -9,6 +10,7 @@ import mobi.shush.goflick.utils.User;
  */
 public class GoFlick extends Application {
     User mUser;
+    Cacher mCacher;
     /**
      * Called when the application starts
      */
@@ -16,5 +18,6 @@ public class GoFlick extends Application {
     public void onCreate() {
         super.onCreate();
         mUser = User.init(this);
+        mCacher = Cacher.init(this);
     }
 }

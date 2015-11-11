@@ -6,4 +6,7 @@
     <string name="clearhistory">Clear History</string>
     <string name="fullhistory">Full History</string>
     <string name="title_activity_history">Search History</string>
+
+    <string name="error_general_title">OOPS</string>
+    <string name="error_general_message">An error has occurred.</string>
 </resources>
